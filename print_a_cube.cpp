@@ -259,7 +259,7 @@ void transform_cube(matrix transformation, Cube& cube){
 }
 
 int main(){
-    string ascii = " ,-:!#$@";
+    string ascii = " ,!#$@";
     vector<vector<int>> mat(4, vector<int>(4,0));
     std::ios::sync_with_stdio(false);  // Disable synchronization
     std::cout.tie(nullptr);  // Untie cin and cout
@@ -299,15 +299,16 @@ int main(){
     cout << "\n";
     std::string out;
 
-    // Initialize the screen with the cursor at the top-left
+    // Initialize the screen with the cursor at the top-leftc
     std::cout << "\x1b[H";  // Set cursor to home position
-    float scale = 0.65;
+    float scale = 0.80;
     for (float k = 0; k < 1000; k += 0.2f) {
         transform_cube(rotate_about_z(1), cube);
 
         out.clear();  // Clear the output buffer for the new frame
         out+=bold;
-        for (float i = -1.5f; i < 1.5f; i += 0.14f*scale) {
+        out+="\n\n\n";
+        for (float i = -1.8f; i < 1.8f; i += 0.14f*scale) {
             for (float j = -2.0f; j < 2.0f; j += 0.06f*scale) {
                 cam = ray({i, j, 3}, {0, 0, 1});
                 auto [collision,point,normal,color] = cube.check_collision(cam);
