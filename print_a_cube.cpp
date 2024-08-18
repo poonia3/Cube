@@ -36,7 +36,8 @@ vector<float> multiply(float a, vector<float> v){
 matrix multiply(float a, matrix m){
     matrix copy = m;
     for(int i = 0; i < m.size();i++){
-        for(int j = 0; j < m[i].size(); j++){
+        int size = m[i].size();
+        for(int j = 0; j < size; j++){
             copy[i][j] *= a;
         }
     }
@@ -76,14 +77,12 @@ public:
 };
 
 vector<float> face(vertex a, vertex b, vertex c, vertex d, vertex centroid){
-    /*
-    cout << "triangle(( " << a[0] << ", " << a[1] << ", " << a[2] << "),";
+    /*cout << "triangle(( " << a[0] << ", " << a[1] << ", " << a[2] << "),";
     cout << "( " << b[0] << ", " << b[1] << ", " << b[2] << "),";
     cout << "( " << c[0] << ", " << c[1] << ", " << c[2] << "))\n";
     cout << "triangle(( " << b[0] << ", " << b[1] << ", " << b[2] << "),";
     cout << "( " << c[0] << ", " << c[1] << ", " << c[2] << "),";
-    cout << "( " << d[0] << ", " << d[1] << ", " << d[2] << "))\n";
-    */
+    cout << "( " << d[0] << ", " << d[1] << ", " << d[2] << "))\n";*/
     vertex abcd_4 = multiply(0.25, sum(sum(a,b),sum(c,d)));
     vertex normal = subtract(abcd_4, centroid);
     normal = normalise(normal);
@@ -130,12 +129,14 @@ tuple<bool, vector<float>, vector<float>, int> Cube::check_collision(ray inciden
             if(i == j) continue;
             auto &s = surfaces[j];
             valid = valid && (surface_value(point, s)*surface_value(face_centres[i], s) > 0);//make collisions work
+            if(!valid) break;
         }
-
         if(valid){
+            //cout << "valid = " << valid << ": face_centre = " << face_centres[i][0] << ", " << face_centres[i][1] << ", " << face_centres[i][2] << "\n";
+            //cout << "Distance = " << distance << "min-distance = " << min_distance << " condition = " << (min_distance > abs(distance)) << "\n";
             check = true;
             if(min_distance > abs(distance)){
-                min_distance = distance;
+                min_distance = abs(distance);
                 result = point;
                 normal = vector(surface.begin(), surface.begin()+3);
                 color = Cube::color[i];
@@ -243,9 +244,9 @@ matrix rotate_about_x(float degrees){
 
 matrix rotate_about_y(float degrees){
     float angle = degrees*M_PI/180.0;
-    return{{           0, 1,           0},
-           {-sinf(angle), 0, cosf(angle)},
-           { cosf(angle), 0, sinf(angle)}};
+    return{{ cosf(angle), 0, sinf(angle)},
+           {           0, 1,           0},
+           {-sinf(angle), 0, cosf(angle)}};
 }
 
 void transform_cube(matrix transformation, Cube& cube){
@@ -259,18 +260,20 @@ void transform_cube(matrix transformation, Cube& cube){
 }
 
 int main(){
+    ofstream file;
+    file.open("output.txt");
     string ascii = " ,!#$@";
     vector<vector<int>> mat(4, vector<int>(4,0));
     std::ios::sync_with_stdio(false);  // Disable synchronization
     std::cout.tie(nullptr);  // Untie cin and cout
-    Cube cube ({{  0.366025,  0.683017,   1.54904},
-                { -0.366025,  -1.68302,   0.18301},
-                {  0.366025,   1.68302,  -0.18301},
-                {   1.36603, -0.816987,  0.683013},
-                {  -1.36603,  0.816987, -0.683013},
-                {  -1.36603, -0.183013,   1.04904},
-                {   1.36603,  0.183013,  -1.04904},
-                { -0.366025, -0.683017,  -1.54904}});
+    Cube cube ({{0.366025,  -1.549040,  0.683017},
+                {0.366025,   0.183010,  1.683020},
+                {-1.366030, -1.049040, -0.183013},
+                {1.366030,  -0.683013, -0.816987},
+                {-1.366030,  0.683010,  0.816990},
+                {-0.366025, -0.183013, -1.683017},
+                {1.366030,   1.049037,  0.183016},
+                {-0.366025,  1.549037, -0.683014}});
     
     /*
     Cube cube ({{  1,  1,   1},
@@ -288,29 +291,41 @@ int main(){
         //cout << "( " << current[0] << ", " << current[1] << ", " << current[2] << ")\n";
     }
 
-
+    
     ray incident_ray({1.366028,1.683018,-1.4519}, {1,1,-3});
     //auto [a, b, c, d] = cube.check_collision(incident_ray);
     //cout << a << "\n";
     //cout << b[0] << ", " << b[1] << ", " << b[2];
 
-    ray cam({0,0,0}, {0,0,1});
+    ray cam({0.664,-0.800001,1.38564} , {0,0,1});
     vertex light = {-10,-10,15};
-    cout << "\n";
     std::string out;
 
     // Initialize the screen with the cursor at the top-leftc
-    std::cout << "\x1b[H";  // Set cursor to home position
+    //std::cout << "\x1b[H";  // Set cursor to home position
     float scale = 0.80;
-    for (float k = 0; k < 1000; k += 0.2f) {
-        transform_cube(rotate_about_z(1), cube);
+
+    auto [collision,point,normal,color] = cube.check_collision(cam);
+
+    //cout << "(" << point[0] << ", " << point[1] << ", " << point[2] << ")\n";
+
+    vertex axis({1, 1, 1});
+    for (int k = 0; k < 100; k += 0.01) {
+        float a = axis[0], b = axis[1], c = axis[1];
+        /*axis = tranform(rotate_about_z(1), axis);
+        std::cout << "(" << axis[0] << ", " << axis[1] << ", " << axis[2] << ")\n" ;*/
+        transform_cube(multiply(1, rotate_about_x(1)), cube);
+        transform_cube(multiply(1, rotate_about_y(1)), cube);
+        transform_cube(multiply(1, rotate_about_z(1)), cube);
+        //std::cout << "(" << axis[0] << ", " << axis[1] << ", " << axis[2] << ")\n" ;
 
         out.clear();  // Clear the output buffer for the new frame
         out+=bold;
-        out+="\n\n\n";
+        auto rotation_matrix = rotate_about_x(k);
         for (float i = -1.8f; i < 1.8f; i += 0.14f*scale) {
             for (float j = -2.0f; j < 2.0f; j += 0.06f*scale) {
                 cam = ray({i, j, 3}, {0, 0, 1});
+                //cam = ray(tranform(rotation_matrix, {i, j, 3}), tranform(rotation_matrix,{0, 0, 1}));
                 auto [collision,point,normal,color] = cube.check_collision(cam);
                 float intensity = 0;
                 if(collision){
@@ -318,7 +333,7 @@ int main(){
                     float il = 1.01/ascii.size();
                     intensity = (intensity > il)?intensity:il;
                 }
-                out += rgb[color] + ascii[int((ascii.size() - 0.01)*intensity)] + reset;
+                out += rgb[color]+ ascii[int((ascii.size() - 0.01)*intensity)]+reset;
             }
             out += '\n';
         }
@@ -328,5 +343,6 @@ int main(){
         std::cout << out.data(); // Print the current frame
 
         //usleep(10000);  // Delay for smooth animation
+        
     }
 }
